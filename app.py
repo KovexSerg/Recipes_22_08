@@ -61,7 +61,7 @@ def get_object_or_404(model, object_id):
     if _object is None:
         abort(404, description=f"Object with id={object_id} not found")
 
-    return object
+    return _object
 
 
 # Resources: Author
