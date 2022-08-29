@@ -1,6 +1,5 @@
 import os
-from flask import Flask
-from flask import request
+from flask import Flask, request, abort
 from pathlib import Path
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -48,6 +47,23 @@ class QuoteModel(db.Model):
         }
 
 
+@app.errorhandler(404)
+def not_found(e):
+    response = {
+        "error": e.description,
+        "status-code": 404
+    }
+    return response, 404
+
+
+def get_object_or_404(model, object_id):
+    _object = model.query.get(object_id)
+    if _object is None:
+        abort(404, description=f"Object with id={object_id} not found")
+
+    return object
+
+
 # Resources: Author
 
 @app.route("/authors")
@@ -58,9 +74,7 @@ def get_authors():
 
 @app.route("/authors/<int:author_id>")
 def get_author_by_id(author_id):
-    author = AuthorModel.query.get(author_id)
-    if author is None:
-        return f"Author with id={author_id} not found", 404
+    author = get_object_or_404(AuthorModel, author_id)
     return author.to_dict()
 
 
@@ -75,9 +89,7 @@ def create_author():
 
 @app.route("/authors/<int:author_id>", methods=["PUT"])
 def edit_author(author_id):
-    author = AuthorModel.query.get(author_id)
-    if author is None:
-        return f"Author with id {author_id} not found.", 404
+    author = get_object_or_404(AuthorModel, author_id)
 
     new_data = request.json
     for key in new_data.keys():
@@ -89,9 +101,7 @@ def edit_author(author_id):
 
 @app.route("/authors/<int:author_id>", methods=["DELETE"])
 def delete_author(author_id):
-    author = AuthorModel.query.get(author_id)
-    if author is None:
-        return f"Author with id {author_id} not found.", 404
+    author = get_object_or_404(AuthorModel, author_id)
     db.session.delete(author)
     db.session.commit()
     return author.to_dict(), 201
